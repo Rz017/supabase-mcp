@@ -1,0 +1,48 @@
+# 上传文件相关
+// Setup type definitions for built-in Supabase Runtime APIs
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { randomUUID } from 'node:crypto'
+
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+)
+
+Deno.serve(async (req) => {
+  const formData = await req.formData()
+  const file = formData.get('file')
+  
+  // TODO: update your-bucket to the bucket you want to write files
+  const { data, error } = await supabase
+    .storage
+    .from('your-bucket')
+    .upload(
+      `${file.name}-${randomUUID()}`,
+      file,
+      { contentType: file.type }
+    )
+  if (error) throw error
+  return new Response(
+    JSON.stringify({ data }),
+    { headers: { 'Content-Type': 'application/json' }}
+  )
+})
+
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "node",
+      "args": [
+        "/path/to/dist/transports/stdio.js",   // 见问题二的部署说明
+        "--project-ref=<project-ref>",         // 建议仍然限制在单一项目范围
+        "--features=account,branching,database,debug,development,docs,functions,storage"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "<personal-access-token>", // 个人访问令牌（PAT）
+        "SUPABASE_URL": "https://<project-ref>.supabase.co",
+        "SUPABASE_SERVICE_KEY": "<service_role_key>"         // service_role Key，已绕过 RLS
+      }
+    }
+  }
+}

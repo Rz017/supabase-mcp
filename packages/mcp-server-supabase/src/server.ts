@@ -6,6 +6,8 @@ import type { SupabasePlatform } from './platform/types.js';
 import { getAccountTools } from './tools/account-tools.js';
 import { getBranchingTools } from './tools/branching-tools.js';
 import { getDatabaseOperationTools } from './tools/database-operation-tools.js';
+import { getDbCrudTools } from './tools/db-crud-tools.js';
+import { getUploadFileTools } from './tools/upload-file-tools.js';
 import { getDebuggingTools } from './tools/debugging-tools.js';
 import { getDevelopmentTools } from './tools/development-tools.js';
 import { getDocsTools } from './tools/docs-tools.js';
@@ -120,6 +122,12 @@ export function createSupabaseMcpServer(options: SupabaseMcpServerOptions) {
       }
 
       if (enabledFeatures.has('database')) {
+        // Low-level SQL + high-level CRUD
+        Object.assign(
+          tools,
+          getDatabaseOperationTools({ platform, projectId, readOnly }),
+          getDbCrudTools({ projectId })
+        );
         Object.assign(
           tools,
           getDatabaseOperationTools({ platform, projectId, readOnly })
@@ -143,7 +151,11 @@ export function createSupabaseMcpServer(options: SupabaseMcpServerOptions) {
       }
 
       if (enabledFeatures.has('storage')) {
-        Object.assign(tools, getStorageTools({ platform, projectId }));
+        Object.assign(
+          tools,
+          getStorageTools({ platform, projectId }),
+          getUploadFileTools({ projectId })
+        );
       }
 
       return tools;

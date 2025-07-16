@@ -2,6 +2,7 @@
 
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { parseArgs } from 'node:util';
+import { readFileSync } from 'node:fs';
 import packageJson from '../../package.json' with { type: 'json' };
 import { createSupabaseApiPlatform } from '../platform/api-platform.js';
 import { createSupabaseMcpServer } from '../server.js';
@@ -18,6 +19,7 @@ async function main() {
       ['api-url']: apiUrl,
       ['version']: showVersion,
       ['features']: cliFeatures,
+      ['config']: configPath,
     },
   } = parseArgs({
     options: {
@@ -40,12 +42,31 @@ async function main() {
       ['features']: {
         type: 'string',
       },
+      ['config']: {
+        type: 'string',
+      },
     },
   });
 
   if (showVersion) {
     console.log(version);
     process.exit(0);
+  }
+
+  // Load .json config if provided
+  if (configPath) {
+    try {
+      const raw = readFileSync(configPath, 'utf8')
+      const json = JSON.parse(raw) as Record<string, string>
+      for (const [k, v] of Object.entries(json)) {
+        if (!process.env[k]) {
+          process.env[k] = v
+        }
+      }
+    } catch (err) {
+      console.error(`Failed to read config file at ${configPath}:`, err)
+      process.exit(1)
+    }
   }
 
   const accessToken = cliAccessToken ?? process.env.SUPABASE_ACCESS_TOKEN;
